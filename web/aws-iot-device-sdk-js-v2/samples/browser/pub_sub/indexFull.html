@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <title>SMAREWHome v9.4</title>
+    <meta content="text/html; charset=UTF-8" http-equiv=Content-Type>
+    <meta http-equiv='refresh' name='viewport' content='width=device-width, initial-scale=1' />
+    <link rel='stylesheet' href='scripts/bootstrap.min.css' />
+    <link rel="stylesheet" href="scripts/component-custom-switch.css" />
+
+    <style>
+        .progress {
+            height: 20px;
+            margin-bottom: 0px;
+            overflow: hidden;
+            background-color: darkgray;
+            border-radius: 4px;
+            -webkit-box-shadow: inset 0 1px 2px rgb(0 0 0 / 10%);
+            box-shadow: inset 0 1px 2px rgb(0 0 0 / 10%);
+        }
+
+        .progress-bar {
+            float: left;
+            width: 0;
+            height: 100%;
+            font-size: 10px;
+            line-height: 23px;
+            color: #fff;
+            text-align: center;
+            background-color: darkblue;
+            -webkit-box-shadow: inset 0 -1px 0 rgb(0 0 0 / 15%);
+            box-shadow: inset 0 -1px 0 rgb(0 0 0 / 15%);
+            -webkit-transition: width .6s ease;
+            -o-transition: width .6s ease;
+            transition: width .6s ease;
+        }
+
+        .progress-bar2 {
+            float: left;
+            width: 0;
+            height: 100%;
+            font-size: 10px;
+            line-height: 23px;
+            color: #fff;
+            text-align: center;
+            background-color: darkcyan;
+            -webkit-box-shadow: inset 0 -1px 0 rgb(0 0 0 / 15%);
+            box-shadow: inset 0 -1px 0 rgb(0 0 0 / 15%);
+            -webkit-transition: width .6s ease;
+            -o-transition: width .6s ease;
+            transition: width .6s ease;
+        }
+    </style>
+
+    <script src='scripts/jquery.min.js' type='text/javascript'></script>
+    <script src='scripts/bootstrap.min.js' type='text/javascript'></script>
+    <script src='scripts/mqttws31.min.js' type='text/javascript'></script>
+
+    <script type='text/javascript'>
+        //Publish Pump Topics
+        var topicPumpValue = 'home/pump/value';
+        var topicPumpStatus = 'home/pump/status';
+        //Suscription Pump topics
+        var topicPumpStatusValue = 'home/pump/status/value';
+        //Pump control and status
+        var ispumpOn = false;
+        var pumpOn = 'On';
+        var pumpOff = 'Off';
+
+        //Publish Valve Topics
+        var topicValveValue = 'home/valve/value';
+        var topicValveStatus = 'home/valve/status';
+        //Suscription Valve topics
+        var topicValveStatusValue = 'home/valve/status/value';
+        //Valve control and status
+        var isvalveOpen = true;
+        var valveOpen = 'Open';
+        var valveClosed = 'Closed';
+
+        //More suscription topics
+        var topicTankStatusValue = 'home/tank/status/value';
+        var topicTankLevelValue = 'home/tank/level/value';
+        var topicSubTankStatusValue = 'home/subtank/status/value';
+        var topicTankLevelPercent = 'home/tank/level/percent';
+        var topicTankSensorLevelPercent = 'home/tank/sensorlevel/percent';
+
+        //More Publish topics
+        var topicTankStatus = 'home/tank/status';
+        var topicSubTankStatus = 'home/subtank/status';
+        var topicTankLevel = 'home/tank/level';
+
+        //Publish Drink Water Pump Topics
+        var topicDrinkPumpValue = 'home/drinkpump/value';
+        var topicDrinkPumpStatus = 'home/drinkpump/status';
+        //Suscription Drink Water Pump topics
+        var topicDrinkPumpStatusValue = 'home/drinkpump/status/value';
+
+        //Drinkpump control and status
+        var isdrinkpumpOn = false;
+        var drinkpumpOn = 'On';
+        var drinkpumpOff = 'Off';
+
+        //Publish Drink Botellon Pump Topics
+        var topicDrinkBotellonPumpValue = 'home/drinkbotellonpump/value';
+        var topicDrinkBotellonPumpStatus = 'home/drinkbotellonpump/status';
+        //Suscription Drink Water Pump topics
+        var topicDrinkBotellonPumpStatusValue = 'home/drinkbotellonpump/status/value';
+        
+
+        //DrinkBotellonpump control and status
+        var isdrinkbotellonpumpOn = false;
+        var drinkbotellonpumpOn = 'On';
+        var drinkbotellonpumpOff = 'Off';
+
+        //Mientras esta leyendo al inicio cada msg
+        var isloading = true;
+
+        function initMQConn() {
+            if ((window.location.host.toUpperCase() == "JCRUZP.NO-IP.BIZ:8080") || (window.location.protocol == "file:")) {
+                client = new Paho.MQTT.Client('jcruzp.no-ip.biz', Number(1884), 'clientId' + Math.random() * 10000);
+                document.getElementById('titleId').innerHTML = document.title + " (Web)";
+            }
+            else {
+                client = new Paho.MQTT.Client('192.168.1.61', Number(1884), 'clientId' + Math.random() * 10000);
+                document.getElementById('titleId').innerHTML = document.title + " (Local)";
+            }
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+            client.connect({
+                onSuccess: onConnect
+            });
+
+        }
+
+        function sendMessage(topic, msg) {
+            message = new Paho.MQTT.Message(msg);
+            message.destinationName = topic;
+            client.send(message);
+        }
+
+        function onConnect() {
+            console.log('onConnect');
+
+            client.subscribe(topicPumpStatusValue);
+            sendMessage(topicPumpStatus, topicPumpStatusValue);
+            console.log('Reading Pump Status...');
+
+            client.subscribe(topicValveStatusValue);
+            sendMessage(topicValveStatus, topicValveStatusValue);
+            console.log('Reading Valve Status...');
+
+            client.subscribe(topicDrinkPumpStatusValue);
+            sendMessage(topicDrinkPumpStatus, topicDrinkPumpStatusValue);
+            console.log('Reading Drink Water Pump Status...');
+
+            client.subscribe(topicDrinkBotellonPumpStatusValue);
+            sendMessage(topicDrinkBotellonPumpStatus, topicDrinkBotellonPumpStatusValue);
+            console.log('Reading Drink Bottelon Pump Status...');
+
+            client.subscribe(topicTankStatusValue);
+            sendMessage(topicTankStatus, topicTankStatusValue);
+            console.log('Reading Tank Level...');
+
+            //client.subscribe(topicTankLevelValue);
+            client.subscribe(topicTankLevelPercent);
+            client.subscribe(topicTankSensorLevelPercent);
+            //sendMessage(topicTankLevel, topicTankLevelValue);
+            console.log('Reading Tank Level Detail ...');
+
+            client.subscribe(topicSubTankStatusValue);
+            sendMessage(topicSubTankStatus, topicSubTankStatusValue);
+            console.log('Reading SubTank Level...');
+
+            //client.subscribe(topicSubTankLevel);
+            //console.log('Reading SubTank Level...');
+
+            client.subscribe(topicPumpValue);
+
+            client.subscribe(topicValveValue);
+
+            client.subscribe(topicDrinkPumpValue);
+
+            client.subscribe(topicDrinkBotellonPumpValue);
+
+            //client.subscribe(topicWaterFlowValue);
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log('onConnectionLost:' + responseObject.errorMessage);
+            }
+        }
+
+        function idcOn(id) {
+            document.getElementById(id).checked = '';
+            document.getElementById(id).disabled = false;
+        }
+
+        function idcOff(id) {
+            document.getElementById(id).checked = 'checked';
+            document.getElementById(id).disabled = false;
+        }
+
+        function showTankStatus(msg) {
+            console.log('Tank Status:' + msg);
+            if (msg == "Empty") {
+                document.getElementById('TankLevel').className = 'label label-danger';
+                document.getElementById('TankLevel').innerHTML = " Vacio ";
+            }
+            else if (msg == "Low") {
+                document.getElementById('TankLevel').className = 'label label-warning';
+                document.getElementById('TankLevel').innerHTML = " Bajo ";
+            }
+            else if (msg == "Medium") {
+                document.getElementById('TankLevel').className = 'label label-info';
+                document.getElementById('TankLevel').innerHTML = " Medio ";
+            }
+            else if (msg == "Full") {
+                document.getElementById('TankLevel').className = 'label label-success';
+                document.getElementById('TankLevel').innerHTML = " Full ";
+            }
+        }
+
+        function showSubTankLevel(msg) {
+            console.log('SubTank Status:' + msg);
+            document.getElementById('SubTankLevel').innerHTML = msg;
+            if (msg == "Empty")
+                document.getElementById('SubTankLevel').className = 'label label-danger';
+            else if (msg == "With Water")
+                document.getElementById('SubTankLevel').className = 'label label-info';
+            //else if (msg == "Medium")
+            //    document.getElementById('SubTankLevel').className = 'label label-info';
+            else if (msg == "Full")
+                document.getElementById('SubTankLevel').className = 'label label-success';
+        }
+
+
+        function showTankLevelDetail(msg) {
+            document.getElementById('LevelPercent').innerHTML = msg;
+            document.getElementById('valueBar').style.width = msg;
+        }
+
+        function showTankSensorLevelDetail(msg) {
+            document.getElementById('SensorLevelPercent').innerHTML = msg;
+            document.getElementById('valueBar2').style.width = msg;
+        }
+
+        //function showWaterFlowValue(msg) {
+        //    document.getElementById('waterFlowValue').innerHTML = msg;
+        //}
+
+        function loadingBar(message) {
+            if ((isloading) && (message.destinationName != topicTankLevelPercent) && (message.destinationName != topicSubTankStatusValue)) {
+                document.getElementById('LoadBar').style.width = (parseInt(document.getElementById('LoadBar').style.width) + 20) + "%";
+                console.log(parseInt(document.getElementById('LoadBar').style.width));
+            }
+        }
+
+        function onMessageArrived(message) {
+            console.log('onMessageArrivedTopic:' + message.destinationName);
+            console.log('onMessageArrived:' + message.payloadString);
+            loadingBar(message);
+
+            if (((message.destinationName == topicDrinkPumpStatusValue) || (message.destinationName == topicDrinkPumpValue)) && (message.payloadString == pumpOn)) {
+                idcOff('CD7');
+                isdrinkpumpOn = true;
+            } else if (((message.destinationName == topicDrinkPumpStatusValue) || (message.destinationName == topicDrinkPumpValue)) && (message.payloadString == pumpOff)) {
+                idcOn('CD7');
+                isdrinkpumpOn = false;
+            } else if (((message.destinationName == topicDrinkBotellonPumpStatusValue) || (message.destinationName == topicDrinkBotellonPumpValue)) && (message.payloadString == pumpOn)) {
+                idcOff('CD8');
+                isdrinkbotellonpumpOn = true;
+            } else if (((message.destinationName == topicDrinkBotellonPumpStatusValue) || (message.destinationName == topicDrinkBotellonPumpValue)) && (message.payloadString == pumpOff)) {
+                idcOn('CD8');
+                isdrinkbotellonpumpOn = false;
+            } else if (((message.destinationName == topicPumpStatusValue) || (message.destinationName == topicPumpValue)) && (message.payloadString == pumpOn)) {
+                idcOff('CD5');
+                ispumpOn = true;
+            } else if (((message.destinationName == topicPumpStatusValue) || (message.destinationName == topicPumpValue)) && (message.payloadString == pumpOff)) {
+                idcOn('CD5');
+                ispumpOn = false;
+            } else if (((message.destinationName == topicValveStatusValue) || (message.destinationName == topicValveValue)) && (message.payloadString == valveClosed)) {
+                idcOff('CD6');
+                isvalveOpen = false;
+            } else if (((message.destinationName == topicValveStatusValue) || (message.destinationName == topicValveValue)) && (message.payloadString == valveOpen)) {
+                idcOn('CD6');
+                isvalveOpen = true;
+            } else if (message.destinationName == topicTankStatusValue) {
+                showTankStatus(message.payloadString);
+                if (isloading) {
+                    isloading = false;
+                    document.getElementById('LevelPercent2').innerHTML = " Ok ";
+                }
+                // } else if (message.destinationName == topicSubTankStatusValue) {
+                //     showSubTankLevel(message.payloadString);
+
+            } else if (message.destinationName == topicTankLevelPercent) {
+                showTankLevelDetail(message.payloadString + "%");
+            } else if (message.destinationName == topicTankSensorLevelPercent) {
+                showTankSensorLevelDetail(message.payloadString + "%");
+            }
+            //} else if (message.destinationName == topicWaterFlowValue)
+            //    showWaterFlowValue(message.payloadString);
+        }
+
+        function pump() {
+            sendMessage(topicPumpValue, ispumpOn ? pumpOff : pumpOn);
+            ispumpOn = !ispumpOn;
+        }
+
+        function drinkpump() {
+            sendMessage(topicDrinkPumpValue, isdrinkpumpOn ? pumpOff : pumpOn);
+            isdrinkpumpOn = !isdrinkpumpOn;
+        }
+
+        function drinkBotellonpump() {
+            sendMessage(topicDrinkBotellonPumpValue, isdrinkbotellonpumpOn ? pumpOff : pumpOn);
+            isdrinkbotellonpumpOn = !isdrinkbotellonpumpOn;
+        }
+
+        function valve() {
+            sendMessage(topicValveValue, isvalveOpen ? valveClosed : valveOpen);
+            isvalveOpen = !isvalveOpen;
+        }
+    </script>
+</head>
+
+<body onload='initMQConn()'>
+    <br>
+    <h4 class='text-center'><span id='titleId'>Loading...</span></h4>
+    <br>
+    <table align="Center"
+        style="padding: 0; border-collapse: collapse; border-spacing: 0;border: 0; width: 290px; background-color:#F6F6F6; ">
+        <tr>
+            <td colspan="2" style="color: darkcyan; background-color:lightgray;padding:6px">
+                <b>&nbsp;Tanque</b>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'><b>&nbsp;Nivel&nbsp;</b></h4>
+            </td>
+            <td>
+                <h4 class='text-left'><span id='TankLevel' class='badge'>...</span></h4>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'>&nbsp;Nivel radar&nbsp;</h4>
+            </td>
+            <td>
+                <table style="padding: 0; border-collapse: collapse; border-spacing: 0; border-width: 1">
+                    <tr>
+                        <td width="100px">
+                            <div class="progress">
+                                <div id="valueBar" class="progress-bar" role="progressbar"
+                                    style="width: 0%; height: 30px">
+                                    <span id='LevelPercent'></span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'>&nbsp;Nivel sensor&nbsp;</h4>
+            </td>
+            <td>
+                <table style="padding: 0; border-collapse: collapse; border-spacing: 0; border-width: 1">
+                    <tr>
+                        <td width="100px">
+                            <div class="progress">
+                                <div id="valueBar2" class="progress-bar" role="progressbar"
+                                    style="width: 0%; height: 30px">
+                                    <span id='SensorLevelPercent'></span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color:lightgray;padding:1px"></td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td style="width:180px">
+                <h4 class='text-left' style='color:darkred'><b>&nbsp;Bomba&nbsp;</b></h4>
+            </td>
+            <td align="left">
+                <div class="custom-switch custom-switch-label-onoff custom-switch-sm pl-0">
+                    <input class="custom-switch-input" id="CD5" type="checkbox" onclick='pump()' disabled>
+                    <label class="custom-switch-btn" for="CD5"></label>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color:lightgray;padding:1px"></td>
+        </tr>
+
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'><b>&nbsp;Válvula&nbsp;</b></h4>
+            </td>
+            <td>
+
+                <div class="custom-switch custom-switch-label-onoff custom-switch-sm pl-0">
+                    <input class="custom-switch-input" id="CD6" type="checkbox" onclick='valve()' disabled>
+                    <label class="custom-switch-btn" for="CD6"></label>
+                </div>
+            </td>
+        </tr>
+        <!--tr>
+            <td colspan="2">
+                <HR />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <h4 class='text-left' style='color:darkblue'>SubTank level is &nbsp;<span id='SubTankLevel'
+                        class='badge'>With Water</span></h4>
+            </td>
+        </tr-->
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="color: darkcyan; background-color:lightgray;padding:6px">
+                <b>&nbsp;Filtro</b>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'><b>&nbsp;Botella 1.5L&nbsp;</b></h4>
+            </td>
+            <td align="left">
+                <div class="custom-switch custom-switch-label-onoff custom-switch-sm pl-0">
+                    <input class="custom-switch-input" id="CD7" type="checkbox" onclick='drinkpump()' disabled>
+                    <label class="custom-switch-btn" for="CD7"></label>
+                </div>
+
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color:lightgray;padding:1px"></td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td>
+                <h4 class='text-left' style='color:darkred'><b>&nbsp;Botellón 20L&nbsp;</b></h4>
+            </td>
+            <td align="left">
+                <div class="custom-switch custom-switch-label-onoff custom-switch-sm pl-0">
+                    <input class="custom-switch-input" id="CD8" type="checkbox" onclick='drinkBotellonpump()' disabled>
+                    <label class="custom-switch-btn" for="CD8"></label>
+                </div>
+
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color:lightgray;padding:1px"></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+
+            </td>
+        </tr>
+    </table>
+    <table align="Center" style="padding: 0; border-collapse: collapse; border-spacing: 0; border-width: 1">
+        <tr>
+            <td width="290px">
+                <div class="progress">
+                    <div id="LoadBar" class="progress-bar2" role="progressbar" style="width: 0%; height: 20px"><span
+                            id='LevelPercent2'>Cargando...</span></div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>
