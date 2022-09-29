@@ -34,4 +34,9 @@ The project description could be found at
 
 ```web/aws-iot-device-sdk-js-v2```
    AWS IoT Javascript SDK to create web page
+   
+
+### License
+This software is licensed under the Apache 2.0 License.
+
 
