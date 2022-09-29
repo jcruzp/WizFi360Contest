@@ -27,11 +27,18 @@ The project description could be found at
  
 ### Files and folders description
 
-```dmhcV2.m5f```
-- The main program build using [UIFlow v1.8.4](https://shop.m5stack.com/pages/uiflow)
+```c_firmware```
+- c language programs using Visual Studio Code
+- 
+- libraries/ADS1115 interface lib for ADS1115 
+- libraries/TLC_Libs al project libs include mqtt, socket, and ws2812 Led interface 
+- libraries/aws-iot-device-sdk-embedded-C AWS pico sdk lib
+- examples/TLC_Level Firmware for level module in C 
+- examples/TLC_Pump  Firmware for pump module in C
 
-```dmhcV2.py```
-- Micropython source code for main program 
+
+```web/aws-iot-device-sdk-js-v2```
+- AWS IoT Javascript SDK 
 
 ```setDeviceId.m5f``` 
 - UIFlow program for set a device_id in AWS IoT Edukit EEprom memory
