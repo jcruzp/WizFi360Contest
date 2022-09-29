@@ -39,7 +39,7 @@ The project description could be found at
 ```web/aws-iot-device-sdk-js-v2```
    AWS IoT Javascript SDK 
 
-```samples/browser/pub_sub``` 
+```web/aws-iot-device-sdk-js-v2/samples/browser/pub_sub``` 
    Web page to control level and pump module
 - index.html source html file
 - index.ts typescript source file to generate index.js
