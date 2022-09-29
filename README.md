@@ -30,7 +30,7 @@ The project description could be found at
 ### Files and folders description
 
 ```c_firmware```
-   c language programs using Visual Studio Code
+   C language programs using Visual Studio Code
 
 - libraries/ADS1115 interface lib for ADS1115 
 - libraries/TLC_Libs al project libs include mqtt, socket, and ws2812 Led interface 
@@ -42,7 +42,8 @@ The project description could be found at
    AWS IoT Javascript SDK 
 
 ```web/aws-iot-device-sdk-js-v2/samples/browser/pub_sub``` 
-   Web page to control level and pump module
+   Web page to control level and pump modules
+
 - index.html source html file
 - index.ts typescript source file to generate index.js
 - settings.js constants with aws iot cores and some credentials
