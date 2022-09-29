@@ -21,7 +21,8 @@ This page is hosted on AWS using the S3 service.
  
 ### Gettting Started
 
-The project description could be found at 
+The project description could be found at
+
  http://maker.wiznet.io/jcruzp/contest/tank-level-control-using-wizfi360-evb-pico-and-aws-services/
  
  
