@@ -12,7 +12,8 @@ In AWS, the IoT Core service is used, which allows other devices to be connected
 
 Additionally, we have the pump module, which, being connected to AWS, is responsible for activating or deactivating the pump, when it receives the respective commands, allowing the filling pump to be remotely activated. 
 
-We control both modules through a web page that can be loaded on a mobile device or on the PC. 
+We control both modules through a web page that can be loaded on a mobile device or on the PC.
+
 This page is hosted on AWS using the S3 service.
  
 ![Imagen](http://maker.wiznet.io/upload/ckeditor5/944403055_1663570124.png)
