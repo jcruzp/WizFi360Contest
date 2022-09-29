@@ -33,5 +33,5 @@ The project description could be found at
    C language programs using Visual Studio Code
 
 ```web/aws-iot-device-sdk-js-v2```
-   AWS IoT Javascript SDK 
+   AWS IoT Javascript SDK to create web page
 
