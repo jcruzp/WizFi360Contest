@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "aws-iot-device-sdk-v2": "file:../../..",
-    "aws-sdk": "^2.585.0",
+    "aws-sdk": "^2.1388.0",
     "jquery": "^3.5.0"
   }
 }
